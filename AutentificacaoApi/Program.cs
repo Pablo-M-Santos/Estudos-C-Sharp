@@ -1,32 +1,43 @@
+// Configura serviços (injeção de dependência, banco, Swagger, etc)
+// Define o pipeline de requisições (middleware: HTTPS, rotas, autenticação...).
 using Microsoft.EntityFrameworkCore;
 
+// Cria o builder para a aplicação
+// O builder é responsável por configurar os serviços e o pipeline da aplicação
 var builder = WebApplication.CreateBuilder(args);
 
-// Adiciona os serviços de controllers
+// regista os controllers da aplicação para que o ASP.NET Core saiba como lidar com requisições HTTP
 builder.Services.AddControllers();
 
-// Configura o banco de dados
+// Regista o DbContext da aplicação para que o ASP.NET Core saiba como lidar com o banco de dados
+// a string de conexão vem do arquivo appsettings.json
+// o DbContext é responsável por mapear as entidades do banco de dados para as classes da aplicação
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Swagger
+// Adiciona o Swagger para gerar a documentação da API
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Depois de registrar os serviços, agora monta o app real
 var app = builder.Build();
 
-// Configura o pipeline
+// Ativa o swagger so em ambiente de desenvolvimento
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
+// redireciona as requisições HTTP para HTTPS
 app.UseHttpsRedirection();
 
+// ativa o middleware de autenticação
 app.UseAuthorization();
 
-// ⬅️ ESSENCIAL para que os [ApiController] funcionem
+// mapeia os controllers da aplicação para que o ASP.NET Core saiba como lidar com as requisições HTTP
+// o ASP.NET Core usa o padrão de rotas para mapear as requisições HTTP para os controllers
 app.MapControllers();
 
+// Inicia o servidor e mantém ele rodando.
 app.Run();
