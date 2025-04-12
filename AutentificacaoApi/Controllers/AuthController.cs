@@ -1,6 +1,11 @@
 using AutenticacaoApi.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 // Indica que a classe é um API REST
 [ApiController]
@@ -47,7 +52,8 @@ public class AuthController : ControllerBase
         {
             Nome = request.Nome,
             Email = request.Email,
-            SenhaHash = BCrypt.Net.BCrypt.HashPassword(request.Senha)
+            SenhaHash = BCrypt.Net.BCrypt.HashPassword(request.Senha),
+            Role = string.IsNullOrWhiteSpace(request.Role) ? "Cliente" : request.Role
         };
 
         _context.Usuarios.Add(usuario);
@@ -68,6 +74,51 @@ public class AuthController : ControllerBase
         if (usuario == null || !BCrypt.Net.BCrypt.Verify(request.Senha, usuario.SenhaHash))
             return Unauthorized("Credenciais inválidas.");
 
-        return Ok("Login efetuado com sucesso.");
+        var token = GenerateJwtToken(usuario);
+
+        return Ok(new { Token = token });
     }
+
+    private string GenerateJwtToken(Usuario usuario)
+    {
+        var claims = new[]
+        {
+            new Claim(ClaimTypes.NameIdentifier, usuario.Id.ToString()),
+            new Claim(ClaimTypes.Email, usuario.Email),
+            new Claim(ClaimTypes.Role, usuario.Role)
+        };
+
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("sua-chave-super-secreta-muito-forte-123!@#"));
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        var token = new JwtSecurityToken(
+            issuer: "seuSistema",
+            audience: "seuSistema",
+            claims: claims,
+            expires: DateTime.UtcNow.AddHours(1),
+            signingCredentials: creds
+        );
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    [Authorize(Roles = "Administrador")]
+    [HttpGet("admin")]
+    public IActionResult GetAdminData()
+    {
+        return Ok("Você é um administrador!");
+    }
+
+    [Authorize(Roles = "Cliente")]
+    [HttpGet("cliente")]
+    public IActionResult GetClienteData()
+    {
+        return Ok("Você é um cliente!");
+    }
+
+
 }
+
+
+
+

@@ -8,6 +8,9 @@ public class UsuarioDTO
 
     // "Senha" campo onde o usuário envia ao fazer cadastro ou login / com criptografia
     public string Senha { get; set; } = string.Empty;
+
+    // Role
+     public string Role { get; set; } = "Cliente"; 
 }
 
 // Porque utilizar o DTO só utiliza o email e senha quando precisar melhorando a segurança e organização.

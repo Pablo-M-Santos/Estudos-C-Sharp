@@ -19,5 +19,8 @@ namespace AutenticacaoApi.Models
 
         // "Senha" do usuário / criptografia com (hash)
         public string SenhaHash { get; set; } = string.Empty;
+
+        // "Role" do usuário / "Cliente" é o valor padrão para novos usuários.
+        public string Role { get; set; } = "Cliente";
     }
 }

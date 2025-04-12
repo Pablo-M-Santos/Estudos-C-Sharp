@@ -1,13 +1,28 @@
 // Configura serviços (injeção de dependência, banco, Swagger, etc)
 // Define o pipeline de requisições (middleware: HTTPS, rotas, autenticação...).
 using Microsoft.EntityFrameworkCore;
-
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 // Cria o builder para a aplicação
 // O builder é responsável por configurar os serviços e o pipeline da aplicação
 var builder = WebApplication.CreateBuilder(args);
 
 // regista os controllers da aplicação para que o ASP.NET Core saiba como lidar com requisições HTTP
 builder.Services.AddControllers();
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        var key = Encoding.ASCII.GetBytes("sua-chave-super-secreta-muito-forte-123!@#");
+
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(key),
+            ValidateIssuer = false,
+            ValidateAudience = false
+        };
+    });
 
 // Regista o DbContext da aplicação para que o ASP.NET Core saiba como lidar com o banco de dados
 // a string de conexão vem do arquivo appsettings.json
@@ -32,12 +47,11 @@ if (app.Environment.IsDevelopment())
 // redireciona as requisições HTTP para HTTPS
 app.UseHttpsRedirection();
 
-// ativa o middleware de autenticação
-app.UseAuthorization();
-
 // mapeia os controllers da aplicação para que o ASP.NET Core saiba como lidar com as requisições HTTP
 // o ASP.NET Core usa o padrão de rotas para mapear as requisições HTTP para os controllers
-app.MapControllers();
+app.UseAuthentication();
+app.UseAuthorization();
 
+app.MapControllers();
 // Inicia o servidor e mantém ele rodando.
 app.Run();
