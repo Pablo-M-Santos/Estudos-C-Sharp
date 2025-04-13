@@ -5,8 +5,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using AutentificacaoApi.Models;
-using AutentificacaoApi.Validations;
 using FluentValidation;
+using FluentValidation.AspNetCore;
 
 // Cria o builder para a aplicação
 // O builder é responsável por configurar os serviços e o pipeline da aplicação
@@ -14,16 +14,10 @@ var builder = WebApplication.CreateBuilder(args);
 
 // regista os controllers da aplicação para que o ASP.NET Core saiba como lidar com requisições HTTP
 builder.Services.AddControllers();
-builder.Services.AddValidatorsFromAssemblyContaining<UsuarioDTOValidator>();
-
-
-// Configura os controllers
-builder.Services.AddControllers(options =>
-{
-    options.Filters.Add<ValidationFilter>(); // Filtro global de validação
-});
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
+builder.Services.AddScoped<IValidator<UsuarioDTO>, UsuarioDTOValidator>(); // para register
+builder.Services.AddScoped<LoginValidator>(); 
 
 var jwtSection = builder.Configuration.GetSection("Jwt");
 var jwtOptions = jwtSection.Get<JwtOptions>();

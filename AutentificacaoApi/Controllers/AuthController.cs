@@ -25,11 +25,14 @@ public class AuthController : ControllerBase
 
     private readonly IValidator<UsuarioDTO> _validator;
 
-    public AuthController(AppDbContext context, IOptions<JwtOptions> jwtOptions, IValidator<UsuarioDTO> validator)
+    private readonly LoginValidator _loginValidator;
+
+    public AuthController(AppDbContext context, IOptions<JwtOptions> jwtOptions, IValidator<UsuarioDTO> validator, LoginValidator loginValidator)
     {
         _context = context;
         _jwtOptions = jwtOptions.Value;
         _validator = validator;
+        _loginValidator = loginValidator;
     }
 
     // Rota Auth/register para registrar um novo usuário
@@ -42,7 +45,8 @@ public class AuthController : ControllerBase
 
         if (!validationResult.IsValid)
         {
-            return BadRequest(validationResult.Errors);
+            var mensagensErro = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
+            return BadRequest(mensagensErro);
         }
 
         // Verifica se o email já está cadastrado no banco de dados. Se sim, retorna erro 400 com mensagem.
@@ -71,6 +75,13 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] UsuarioDTO request)
     {
+        var validationResult = await _loginValidator.ValidateAsync(request);
+
+        if (!validationResult.IsValid)
+        {
+            var mensagensErro = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
+            return BadRequest(mensagensErro);
+        }
 
         // Verifica se o email e a senha foram informados. Se não, retorna erro 400 com mensagem.
         var usuario = await _context.Usuarios.FirstOrDefaultAsync(u => u.Email == request.Email);

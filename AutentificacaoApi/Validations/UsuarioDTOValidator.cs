@@ -1,28 +1,23 @@
-using Microsoft.AspNetCore.Mvc;
+using FluentValidation;
+using AutenticacaoApi.Models; 
 
-using Microsoft.AspNetCore.Mvc.Filters;
-
-namespace AutentificacaoApi.Validations
+public class UsuarioDTOValidator : AbstractValidator<UsuarioDTO>
 {
-    public class UsuarioDTOValidator  : IActionFilter
+    public UsuarioDTOValidator()
     {
-        public void OnActionExecuting(ActionExecutingContext context)
-        {
-            if (!context.ModelState.IsValid)
-            {
-                var errors = context.ModelState
-                    .Where(x => x.Value != null && x.Value.Errors.Any())
-                    .ToDictionary(
-                        kvp => kvp.Key,
-                        kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage).ToArray()
-                    );
+        RuleFor(x => x.Nome)
+            .NotEmpty().WithMessage("O nome é obrigatório.");
 
-                context.Result = new BadRequestObjectResult(new { errors });
-            }
-        }
+        RuleFor(x => x.Email)
+            .NotEmpty().WithMessage("O e-mail é obrigatório.")
+            .EmailAddress().WithMessage("Formato de e-mail inválido.");
 
-        public void OnActionExecuted(ActionExecutedContext context)
-        {
-        }
+        RuleFor(x => x.Senha)
+            .NotEmpty().WithMessage("A senha é obrigatória.");
+
+        RuleFor(x => x.Role)
+            .Must(role => role == "Cliente" || role == "Administrador")
+            .WithMessage("O role deve ser 'Cliente' ou 'Administrador'.")
+            .When(x => !string.IsNullOrWhiteSpace(x.Role));
     }
 }
