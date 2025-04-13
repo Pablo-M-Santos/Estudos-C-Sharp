@@ -6,6 +6,10 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Microsoft.Extensions.Options;
+using AutentificacaoApi.Models;
+using FluentValidation;
+
 
 // Indica que a classe é um API REST
 [ApiController]
@@ -17,10 +21,15 @@ public class AuthController : ControllerBase
     // Injetando o AppDbContext no crontroller permitindo acesso ao banco de dados com _context
     // readonly significa que o valor só pode ser atribuído no construtor ou na declaração
     private readonly AppDbContext _context;
+    private readonly JwtOptions _jwtOptions;
 
-    public AuthController(AppDbContext context)
+    private readonly IValidator<UsuarioDTO> _validator;
+
+    public AuthController(AppDbContext context, IOptions<JwtOptions> jwtOptions, IValidator<UsuarioDTO> validator)
     {
         _context = context;
+        _jwtOptions = jwtOptions.Value;
+        _validator = validator;
     }
 
     // Rota Auth/register para registrar um novo usuário
@@ -29,16 +38,12 @@ public class AuthController : ControllerBase
     // fromBody espera os dados do UsuarioDTO no corpo da requisição
     public async Task<IActionResult> Register([FromBody] UsuarioDTO request)
     {
+        var validationResult = await _validator.ValidateAsync(request);
 
-        // Se algum campo estiver vazio ou nulo, retorna erro 400 com mensagem.
-        if (string.IsNullOrWhiteSpace(request.Nome))
-            return BadRequest("O campo 'Nome' é obrigatório.");
-
-        if (string.IsNullOrWhiteSpace(request.Email))
-            return BadRequest("O campo 'Email' é obrigatório.");
-
-        if (string.IsNullOrWhiteSpace(request.Senha))
-            return BadRequest("O campo 'Senha' é obrigatório.");
+        if (!validationResult.IsValid)
+        {
+            return BadRequest(validationResult.Errors);
+        }
 
         // Verifica se o email já está cadastrado no banco de dados. Se sim, retorna erro 400 com mensagem.
         // O método AnyAsync verifica se existe algum registro que atenda a condição especificada.
@@ -66,6 +71,7 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] UsuarioDTO request)
     {
+
         // Verifica se o email e a senha foram informados. Se não, retorna erro 400 com mensagem.
         var usuario = await _context.Usuarios.FirstOrDefaultAsync(u => u.Email == request.Email);
 
@@ -81,6 +87,7 @@ public class AuthController : ControllerBase
 
     private string GenerateJwtToken(Usuario usuario)
     {
+        // claims são informações sobre o usuário que serão incluídas no token JWT
         var claims = new[]
         {
             new Claim(ClaimTypes.NameIdentifier, usuario.Id.ToString()),
@@ -88,17 +95,21 @@ public class AuthController : ControllerBase
             new Claim(ClaimTypes.Role, usuario.Role)
         };
 
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("sua-chave-super-secreta-muito-forte-123!@#"));
+        // Cria a chave de segurança e as credenciais de assinatura do token JWT
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtOptions.Key));
+        // chave secreta utilizando HMAC SHA256 para assinar o token
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
+        // Cria o token JWT com as informações do usuário, data de expiração e credenciais de assinatura
         var token = new JwtSecurityToken(
-            issuer: "seuSistema",
-            audience: "seuSistema",
-            claims: claims,
-            expires: DateTime.UtcNow.AddHours(1),
-            signingCredentials: creds
-        );
+        issuer: _jwtOptions.Issuer,
+        audience: _jwtOptions.Audience,
+        claims: claims,
+        expires: DateTime.UtcNow.AddHours(_jwtOptions.ExpireHours),
+        signingCredentials: creds
+    );
 
+        // Devolve uma string (compactado) com o token JWT gerado
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
@@ -115,7 +126,6 @@ public class AuthController : ControllerBase
     {
         return Ok("Você é um cliente!");
     }
-
 
 }
 

@@ -4,25 +4,52 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using AutentificacaoApi.Models;
+using AutentificacaoApi.Validations;
+using FluentValidation;
+
 // Cria o builder para a aplicação
 // O builder é responsável por configurar os serviços e o pipeline da aplicação
 var builder = WebApplication.CreateBuilder(args);
 
 // regista os controllers da aplicação para que o ASP.NET Core saiba como lidar com requisições HTTP
 builder.Services.AddControllers();
+builder.Services.AddValidatorsFromAssemblyContaining<UsuarioDTOValidator>();
+
+
+// Configura os controllers
+builder.Services.AddControllers(options =>
+{
+    options.Filters.Add<ValidationFilter>(); // Filtro global de validação
+});
+
+builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
+
+var jwtSection = builder.Configuration.GetSection("Jwt");
+var jwtOptions = jwtSection.Get<JwtOptions>();
+
+if (jwtOptions == null || string.IsNullOrEmpty(jwtOptions.Key))
+{
+    throw new Exception("JWT options not configured correctly in appsettings.json");
+}
+
+var key = Encoding.ASCII.GetBytes(jwtOptions.Key);
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        var key = Encoding.ASCII.GetBytes("sua-chave-super-secreta-muito-forte-123!@#");
-
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(key),
-            ValidateIssuer = false,
-            ValidateAudience = false
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidIssuer = jwtOptions.Issuer,
+            ValidAudience = jwtOptions.Audience
         };
     });
+
+
 
 // Regista o DbContext da aplicação para que o ASP.NET Core saiba como lidar com o banco de dados
 // a string de conexão vem do arquivo appsettings.json

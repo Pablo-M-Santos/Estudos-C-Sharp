@@ -144,3 +144,6 @@ C:\Users\Pablo\Documents\Estudos-C-Sharp\AutentificacaoApi\bin\Debug\net8.0\Micr
 C:\Users\Pablo\Documents\Estudos-C-Sharp\AutentificacaoApi\bin\Debug\net8.0\Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
 C:\Users\Pablo\Documents\Estudos-C-Sharp\AutentificacaoApi\bin\Debug\net8.0\Microsoft.IdentityModel.Tokens.dll
 C:\Users\Pablo\Documents\Estudos-C-Sharp\AutentificacaoApi\bin\Debug\net8.0\System.IdentityModel.Tokens.Jwt.dll
+C:\Users\Pablo\Documents\Estudos-C-Sharp\AutentificacaoApi\bin\Debug\net8.0\FluentValidation.dll
+C:\Users\Pablo\Documents\Estudos-C-Sharp\AutentificacaoApi\bin\Debug\net8.0\FluentValidation.AspNetCore.dll
+C:\Users\Pablo\Documents\Estudos-C-Sharp\AutentificacaoApi\bin\Debug\net8.0\FluentValidation.DependencyInjectionExtensions.dll

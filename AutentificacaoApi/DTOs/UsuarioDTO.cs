@@ -9,7 +9,7 @@ public class UsuarioDTO
     // "Senha" campo onde o usuário envia ao fazer cadastro ou login / com criptografia
     public string Senha { get; set; } = string.Empty;
 
-    // Role
+    // Role Cliente e Admin / padrão Cliente
      public string Role { get; set; } = "Cliente"; 
 }
 
